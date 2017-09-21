@@ -1,9 +1,15 @@
 package org.ultraviolet.spectrum.z80;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.ultraviolet.spectrum.machines.Spectrum48k;
+
 /**
  * Created by developer on 21/09/2017.
  */
 public class Z80 {
+
 	//Registers
 	//	A,B,C,D,E            8-bit registers
 	//	AF                   16-bit register containing A and flags
@@ -40,6 +46,7 @@ public class Z80 {
 	private byte regR;
 	//	SP                   16-bit Stack Pointer register
 	private byte[] sp;
+	static final Logger logger = LoggerFactory.getLogger(Z80.class);
 
 	public Z80() {
 	}
@@ -190,4 +197,23 @@ public class Z80 {
 	public void setSp(byte[] sp) {
 		this.sp = sp;
 	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+
+	public static byte[] intToBytes(int x) {
+		byte[] bytes = new byte[4];
+
+		for (int i = 0; x != 0; i++, x >>>= 8) {
+			bytes[i] = (byte) (x & 0xFF);
+		}
+
+		return bytes;
+	}
+
+	public static int bytesToInt(byte[] arr, int off) {
+		return arr[off]<<8 &0xFF00 | arr[off+1]&0xFF;
+	} // end of getInt
 }
