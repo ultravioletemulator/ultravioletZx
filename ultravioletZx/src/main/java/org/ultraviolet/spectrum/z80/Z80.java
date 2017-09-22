@@ -3,6 +3,8 @@ package org.ultraviolet.spectrum.z80;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.ultraviolet.spectrum.core.Masks;
+import org.ultraviolet.spectrum.machines.Machine;
 import org.ultraviolet.spectrum.machines.Spectrum48k;
 
 /**
@@ -29,29 +31,40 @@ public class Z80 {
 	private byte regD;
 	private byte regE;
 	// 16Bits
-	private byte[] regAF;
-	private byte[] regBC;
-	private byte[] regDE;
-	private byte[] regHL;
+	private short regAF;
+	private short regBC;
+	private short regDE;
+	private short regHL;
+	//
 	//	8-bit Flag register 	F
+	//Bit 	7 6 5 4 3 2 	1 0
+	//Pos	S Z X H X P/V	N C
+	// C carry Flag
+	// N ann/subtract
+	// P/V Parity/Overflow flag
+	// H 	Half carry flag
+	// Z	Zero flag
+	// S	Sign flag
+	// X 	Not used
+	//
 	private byte regF;
 	//	8-bit Interrupt Page address register I
 	private byte regI;
 	//	16-bit index registers  	IX,IY
-	private byte[] regIX;
-	private byte[] regIY;
+	private short regIX;
+	private short regIY;
 	//	PC                   16-bit Program Counter register
-	private byte[] pc;
+	private short pc;
 	//	8-bit Memory Refresh register 		R
 	private byte regR;
 	//	SP                   16-bit Stack Pointer register
-	private byte[] sp;
+	private short sp;
 	static final Logger logger = LoggerFactory.getLogger(Z80.class);
 
 	public Z80() {
 	}
 
-	public Z80(byte regA, byte regB, byte regC, byte regD, byte regE, byte[] regAF, byte[] regBC, byte[] regDE, byte[] regHL, byte regF, byte regI, byte[] regIX, byte[] regIY, byte[] pc, byte regR, byte[] sp) {
+	public Z80(byte regA, byte regB, byte regC, byte regD, byte regE, short regAF, short regBC, short regDE, short regHL, byte regF, byte regI, short regIX, short regIY, short pc, byte regR, short sp) {
 		this.regA = regA;
 		this.regB = regB;
 		this.regC = regC;
@@ -110,35 +123,35 @@ public class Z80 {
 		this.regE = regE;
 	}
 
-	public byte[] getRegAF() {
+	public short getRegAF() {
 		return regAF;
 	}
 
-	public void setRegAF(byte[] regAF) {
+	public void setRegAF(short regAF) {
 		this.regAF = regAF;
 	}
 
-	public byte[] getRegBC() {
+	public short getRegBC() {
 		return regBC;
 	}
 
-	public void setRegBC(byte[] regBC) {
+	public void setRegBC(short regBC) {
 		this.regBC = regBC;
 	}
 
-	public byte[] getRegDE() {
+	public short getRegDE() {
 		return regDE;
 	}
 
-	public void setRegDE(byte[] regDE) {
+	public void setRegDE(short regDE) {
 		this.regDE = regDE;
 	}
 
-	public byte[] getRegHL() {
+	public short getRegHL() {
 		return regHL;
 	}
 
-	public void setRegHL(byte[] regHL) {
+	public void setRegHL(short regHL) {
 		this.regHL = regHL;
 	}
 
@@ -158,27 +171,27 @@ public class Z80 {
 		this.regI = regI;
 	}
 
-	public byte[] getRegIX() {
+	public short getRegIX() {
 		return regIX;
 	}
 
-	public void setRegIX(byte[] regIX) {
+	public void setRegIX(short regIX) {
 		this.regIX = regIX;
 	}
 
-	public byte[] getRegIY() {
+	public short getRegIY() {
 		return regIY;
 	}
 
-	public void setRegIY(byte[] regIY) {
+	public void setRegIY(short regIY) {
 		this.regIY = regIY;
 	}
 
-	public byte[] getPc() {
+	public short getPc() {
 		return pc;
 	}
 
-	public void setPc(byte[] pc) {
+	public void setPc(short pc) {
 		this.pc = pc;
 	}
 
@@ -190,13 +203,41 @@ public class Z80 {
 		this.regR = regR;
 	}
 
-	public byte[] getSp() {
+	public short getSp() {
 		return sp;
 	}
 
-	public void setSp(byte[] sp) {
+	public void setSp(short sp) {
 		this.sp = sp;
 	}
+
+	public byte getCFlag() {
+		return (byte) (this.regF & Masks.MASK_FLAG_C);
+	}
+
+	public byte getNFlag() {
+		return (byte) (this.regF & Masks.MASK_FLAG_N);
+	}
+
+	public byte getPVFlag() {
+		return (byte) (this.regF & Masks.MASK_FLAG_PV);
+	}
+
+	public byte getZFlag() {
+		return (byte) (this.regF & Masks.MASK_FLAG_Z);
+	}
+
+	public byte getSFlag() {
+		return (byte) (this.regF & Masks.MASK_FLAG_S);
+	}
+
+	// C carry Flag
+	// N ann/subtract
+	// P/V Parity/Overflow flag
+	// H 	Half carry flag
+	// Z	Zero flag
+	// S	Sign flag
+	// X 	Not used
 
 	@Override
 	public String toString() {
@@ -205,15 +246,25 @@ public class Z80 {
 
 	public static byte[] intToBytes(int x) {
 		byte[] bytes = new byte[4];
-
 		for (int i = 0; x != 0; i++, x >>>= 8) {
 			bytes[i] = (byte) (x & 0xFF);
 		}
-
 		return bytes;
 	}
 
+	public static byte setFlag(Machine machine, byte flags) {
+		byte flagsPrev = machine.getZ80().getRegF();
+		byte flagsRes = (byte) (flagsPrev & flags);
+		machine.getZ80().setRegF(flagsRes);
+		return flagsRes;
+	}
+
 	public static int bytesToInt(byte[] arr, int off) {
-		return arr[off]<<8 &0xFF00 | arr[off+1]&0xFF;
+		return arr[off] << 8 & 0xFF00 | arr[off + 1] & 0xFF;
 	} // end of getInt
+
+	public static short toShort(byte hi, byte lo) {
+		short val = (short) (((hi & 0xFF) << 8) | (lo & 0xFF));
+		return val;
+	}
 }

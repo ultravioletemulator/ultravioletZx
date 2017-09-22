@@ -1,5 +1,6 @@
 package org.ultraviolet.spectrum.app;
 
+import org.ultraviolet.spectrum.exceptions.ZxException;
 import org.ultraviolet.spectrum.machines.Spectrum48k;
 
 /**
@@ -7,11 +8,17 @@ import org.ultraviolet.spectrum.machines.Spectrum48k;
  */
 public class UltavioletZx {
 
-	public static void main(String[] args) {
-		initializeZx48k();
+	public static int main(String[] args) {
+		try {
+			initializeZx48k();
+		} catch (ZxException e) {
+			e.printStackTrace();
+			return -1;
+		}
+		return 0;
 	}
 
-	public static void initializeZx48k() {
+	public static void initializeZx48k() throws ZxException {
 		Spectrum48k s48k = new Spectrum48k();
 		s48k.init();
 	}

@@ -2,6 +2,9 @@ package org.ultraviolet.spectrum.z80;
 
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.commons.validator.routines.RegexValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.ultraviolet.spectrum.core.Masks;
 import org.ultraviolet.spectrum.machines.Machine;
 
 import java.io.FileInputStream;
@@ -17,13 +20,15 @@ import java.util.stream.Collectors;
  */
 public class OpCodesUtils {
 
+	static final Logger logger = LoggerFactory.getLogger(OpCodesUtils.class);
+
 	public void f00() {
 		//NOP
 	}
 
 	public void f01(Machine machine, int par1, int par2) {
 		//	LD BC,NN                ; 01 XX XX
-		machine.getZ80().setRegBC(Z80.intToBytes(par2));
+		machine.getZ80().setRegBC((short) par2);
 	}
 
 	public void f02(Machine machine, int par1, int par2) {
@@ -34,34 +39,197 @@ public class OpCodesUtils {
 
 	public void f03(Machine machine, int par1) {
 		//	INC BC                  ; 03
-		machine.getZ80().setRegBC(Z80.intToBytes(Z80.bytesToInt(machine.getZ80().getRegBC(), 0) + 1));
+		machine.getZ80().setRegBC((short) (machine.getZ80().getRegBC() + 1));
 	}
 
+	public void f04(Machine machine) {
+		//	INC B                   ; 04
+		machine.getZ80().setRegBC((short) (machine.getZ80().getRegB() + 1));
+	}
 
-	//	NOP                     ; 00
-	//	LD BC,NN                ; 01 XX XX
-	//	LD (BC),A               ; 02
-	//	INC BC                  ; 03
-	//	INC B                   ; 04
-	//	DEC B                   ; 05
-	//	LD B,N                  ; 06 XX
-	//			RLCA                    ; 07
-	//	EX AF,AF'               ; 08
-	//	ADD HL,BC               ; 09
-	//	LD A,(BC)               ; 0A
-	//	DEC BC                  ; 0B
-	//	INC C                   ; 0C
-	//	DEC C                   ; 0D
-	//	LD C,N                  ; 0E XX
-	//			RRCA                    ; 0F
-	//	DJNZ $+2                ; 10
-	//	LD DE,NN                ; 11 XX XX
-	//	LD (DE),A               ; 12
-	//	INC DE                  ; 13
-	//	INC D                   ; 14
-	//	DEC D                   ; 15
-	//	LD D,N                  ; 16 XX
-	//			RLA                     ; 17
+	public void f05(Machine machine) {
+		//	DEC B                   ; 05
+		machine.getZ80().setRegBC((short) (machine.getZ80().getRegB() - 1));
+	}
+
+	public void f06(Machine machine, byte par1) {
+		//	LD B,N                  ; 06 XX
+		machine.getZ80().setRegB(par1);
+	}
+
+	public void f07(Machine machine) {
+		//			RLCA                    ; 07
+		byte val = machine.getZ80().getRegA();
+		byte carry = (byte) (val & Masks.MASK_CARRY_BYTE);
+		byte res = (byte) ((byte) (val << 1) & carry);
+		machine.getZ80().setRegA(res);
+		Z80.setFlag(machine, carry);
+	}
+
+	public void f08(Machine machine, byte par1) {
+		//	EX AF,AF'               ; 08
+		// TODO
+	}
+
+	public void f09(Machine machine) {
+		//	ADD HL,BC               ; 09
+		Z80 z80 = machine.getZ80();
+		short hl = (short) z80.getRegHL();
+		short bc = (short) z80.getRegBC();
+		try {
+			short res = (short) (Math.addExact(hl, bc));
+			z80.setRegHL(res);
+		} catch (Exception e) {
+			//e.printStackTrace();
+			logger.info("Overflow HL");
+			Z80.setFlag(machine, Masks.MASK_FLAG_PV);
+		}
+	}
+
+	public void f0A(Machine machine) {
+		//	LD A,(BC)               ; 0A
+		Z80 z80 = machine.getZ80();
+		byte val = machine.getRam().getByteFromAddress(z80.getRegBC());
+		z80.setRegA(val);
+	}
+
+	public void f0B(Machine machine) {
+		//	DEC BC                  ; 0B
+		Z80 z80 = machine.getZ80();
+		int res = 0;
+		try {
+			res = Math.subtractExact(z80.getRegBC(), 1);
+		} catch (Exception e) {
+			//			e.printStackTrace();
+			logger.info("Overflow BC");
+			Z80.setFlag(machine, Masks.MASK_FLAG_PV);
+		}
+		z80.setRegBC((short) res);
+	}
+
+	public void f0C(Machine machine) {
+		//	INC C                   ; 0C
+		Z80 z80 = machine.getZ80();
+		byte res = 0;
+		try {
+			res = (byte) Math.addExact(z80.getRegC(), 1);
+		} catch (Exception e) {
+			//			e.printStackTrace();
+			logger.info("Overflow C");
+			Z80.setFlag(machine, Masks.MASK_FLAG_PV);
+		}
+		z80.setRegC((byte) res);
+	}
+
+	public void f0D(Machine machine) {
+		//	DEC C                   ; 0D
+		Z80 z80 = machine.getZ80();
+		byte res = 0;
+		try {
+			res = (byte) Math.subtractExact(z80.getRegC(), 1);
+		} catch (Exception e) {
+			//			e.printStackTrace();
+			logger.info("Underflow C");
+			Z80.setFlag(machine, Masks.MASK_FLAG_PV);
+		}
+		z80.setRegC((byte) res);
+	}
+
+	public void f0A(Machine machine, byte p) {
+		//	LD C,N                  ; 0E XX
+		Z80 z80 = machine.getZ80();
+		z80.setRegC(p);
+	}
+
+	public void f0F(Machine machine, byte p) {
+		//			RRCA                    ; 0F
+		Z80 z80 = machine.getZ80();
+		byte c = z80.getRegA();
+		byte carry = (byte) (c & Masks.MASK_CARRY_BYTE);
+		byte res = (byte) ((c >> 1) & carry);
+		z80.setRegA(p);
+	}
+
+	public void f10(Machine machine, byte p) {
+		//	DJNZ $+2                ; 10
+		Z80 z80 = machine.getZ80();
+		// TODO
+	}
+
+	public void f11(Machine machine, byte p1, byte p2) {
+		//	LD DE,NN                ; 11 XX XX
+		Z80 z80 = machine.getZ80();
+		z80.setRegDE(Z80.toShort(p1, p2));
+	}
+
+	public void f11(Machine machine, short p) {
+		//	LD DE,NN                ; 11 XX XX
+		Z80 z80 = machine.getZ80();
+		z80.setRegDE(p);
+	}
+
+	public void f12(Machine machine) {
+		//	LD (DE),A               ; 12
+		Z80 z80 = machine.getZ80();
+		machine.getRam().setByteToAddress(z80.getRegDE(), z80.getRegA());
+	}
+
+	public void f13(Machine machine) {
+		//	INC DE                  ; 13
+		Z80 z80 = machine.getZ80();
+		try {
+			short res = (short) Math.addExact(z80.getRegDE(), 1);
+			z80.setRegDE(res);
+		} catch (Exception e) {
+			//			e.printStackTrace();
+			logger.info("Overflow DE");
+			Z80.setFlag(machine, Masks.MASK_FLAG_PV);
+		}
+	}
+
+	public void f14(Machine machine) {
+		//	INC D                   ; 14
+		Z80 z80 = machine.getZ80();
+		try {
+			byte res = (byte) Math.addExact(z80.getRegD(), 1);
+			z80.setRegD(res);
+		} catch (Exception e) {
+			//			e.printStackTrace();
+			logger.info("Overflow D");
+			Z80.setFlag(machine, Masks.MASK_FLAG_PV);
+		}
+	}
+
+	public void f15(Machine machine) {
+		//	DEC D                   ; 15
+		Z80 z80 = machine.getZ80();
+		try {
+			byte res = (byte) Math.subtractExact(z80.getRegD(), 1);
+			z80.setRegD(res);
+		} catch (Exception e) {
+			//			e.printStackTrace();
+			logger.info("Underflow D");
+			Z80.setFlag(machine, Masks.MASK_FLAG_PV);
+		}
+	}
+
+	public void f16(Machine machine, byte p) {
+		//	LD D,N                  ; 16 XX
+		Z80 z80 = machine.getZ80();
+		z80.setRegD(p);
+	}
+
+	public void f17(Machine machine, byte p) {
+		//			RLA                     ; 17
+		Z80 z80 = machine.getZ80();
+		byte carryFP = z80.getCFlag();
+		byte regA = z80.getRegA();
+		byte carryP = (byte) (regA & Masks.MASK_CARRY_BYTE);
+		byte res = (byte) (((byte) (regA << 1)) & carryFP);
+		z80.setRegA(res);
+		Z80.setFlag(machine, carryP);
+	}
+
 	//	JR $+2                  ; 18
 	//	ADD HL,DE               ; 19
 	//	LD A,(DE)               ; 1A
@@ -733,12 +901,6 @@ public class OpCodesUtils {
 	//	RST 38H                 ; FF
 	//
 	//
-	public final static byte MASK_OP1 = (byte) 0xFF000000;
-	public final static byte MASK_OP2 = (byte) 0xFFFF0000;
-	public final static byte MASK_OP3 = (byte) 0xFFFFFF00;
-	public final static byte MASK_PAR1 = (byte) 0x00FF0000;
-	public final static byte MASK_PAR2 = (byte) 0x0000FF00;
-	public final static byte MASK_PAR3 = (byte) 0x000000FF;
 	public final static String RX_NO_PAR = "[0-9a-fA-F][0-9a-fA-F]XXXXXX";
 	public final static String RX_1_PAR_HEX = "[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]XXXX";
 	public final static String RX_1_PAR = "[0-9a-fA-F][0-9a-fA-F][0-9a-zA-Z][0-9a-zA-Z]XXXX";
@@ -788,7 +950,7 @@ public class OpCodesUtils {
 
 	static OpCodesUtils decoder = new OpCodesUtils();
 
-	public static void runOpCode(byte[] ops)
+	public static void runOpCode(Machine machine, byte[] ops)
 			throws InvocationTargetException, IllegalAccessException {
 		//min 4 bit op max 4+4+4
 		byte op0 = ops[0];
@@ -807,24 +969,25 @@ public class OpCodesUtils {
 			method.invoke(decoder);
 		} else if (rx1parHexValidator.isValid(decodedOp)) {
 			Class decoderClass = OpCodesUtils.class;
-			int par1 = op1 & MASK_PAR1;
+			int par1 = op1 & Masks.MASK_PAR1;
 			String strPar1 = null;
 			Method method = MethodUtils.getMatchingAccessibleMethod(decoderClass, "f" + decodedOp, Integer.class);
 			method.invoke(decoder, par1);
 		} else if (rx1parValidator.isValid(decodedOp)) {
 			Class decoderClass = OpCodesUtils.class;
-			int par1 = op1 & MASK_PAR1;
+			int par1 = op1 & Masks.MASK_PAR1;
 			String strPar1 = null;
 			Method method = MethodUtils.getMatchingAccessibleMethod(decoderClass, "f" + decodedOp, Integer.class);
 			method.invoke(decoder, par1);
 		} else if (rx2parHexValidator.isValid(decodedOp)) {
 			Class decoderClass = OpCodesUtils.class;
-			int par1 = op1 & MASK_PAR1;
-			int par2 = op2 & MASK_PAR2;
+			int par1 = op1 & Masks.MASK_PAR1;
+			int par2 = op2 & Masks.MASK_PAR2;
 			String strPar1 = null;
 			Method method = MethodUtils.getMatchingAccessibleMethod(decoderClass, "f" + decodedOp, Integer.class);
 			method.invoke(decoder, par1, par2);
 		} else if (rx2parValidator.isValid(decodedOp)) {
 		}
+		machine.getZ80().setPc((short) (machine.getZ80().getPc() + 1));
 	}
 }
