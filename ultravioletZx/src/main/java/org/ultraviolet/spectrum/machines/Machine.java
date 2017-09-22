@@ -7,12 +7,10 @@ import org.ultraviolet.spectrum.exceptions.MemoryException;
 import org.ultraviolet.spectrum.exceptions.ZxException;
 import org.ultraviolet.spectrum.loaders.Loader;
 import org.ultraviolet.spectrum.loaders.TapeLoader;
-import org.ultraviolet.spectrum.z80.Memory;
-import org.ultraviolet.spectrum.z80.Ram;
-import org.ultraviolet.spectrum.z80.Ula;
-import org.ultraviolet.spectrum.z80.Z80;
+import org.ultraviolet.spectrum.z80.*;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Stack;
 
 /**
@@ -33,12 +31,29 @@ public abstract class Machine {
 
 	public abstract void init() throws IOException, ZxException;
 
-	public void run() throws InterruptedException {
-		logger.debug("Runninng Machine:" + this);
+	public void runBios()
+			throws InterruptedException, InvocationTargetException, IllegalAccessException, IOException {
+		logger.debug("Runninng Machine Bios :" + this);
 		while (true) {
-			logger.debug("Running ");
-			Thread.sleep(1000l);
+			byte content1 = rom.getByteFromAddress(z80.getPc());
+			byte content2 = rom.getByteFromAddress(z80.getPc() + 1);
+			byte content3 = rom.getByteFromAddress(z80.getPc() + 2);
+			byte[] contentArr = new byte[] { content1, content2, content3 };
+			logger.debug("OpCode: " + Z80.bytesToHex(contentArr));
+			OpCodesUtils.runOpCode(this, contentArr);
+			z80.setPc((short) (z80.getPc() + 1));
+			Thread.sleep(200);
 		}
+	}
+
+	public void run()
+			throws InterruptedException, InvocationTargetException, IllegalAccessException, IOException {
+		logger.debug("Runninng Machine:" + this);
+		runBios();
+		//		while (true) {
+		//			logger.debug("Running ");
+		//			Thread.sleep(1000l);
+		//		}
 	}
 
 	public Machine(Loader loader, Memory ram, Memory rom, Z80 z80, Ula ula) {

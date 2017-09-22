@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ultraviolet.spectrum.core.Masks;
 import org.ultraviolet.spectrum.machines.Machine;
-import org.ultraviolet.spectrum.machines.Spectrum48k;
 
 /**
  * Created by developer on 21/09/2017.
@@ -31,9 +30,9 @@ public class Z80 {
 	private byte regD;
 	private byte regE;
 	// 16Bits
-	private short regAF;
-	private short regBC;
-	private short regDE;
+	//	private short regAF;
+	//	private short regBC;
+	//	private short regDE;
 	private short regHL;
 	//
 	//	8-bit Flag register 	F
@@ -49,12 +48,13 @@ public class Z80 {
 	//
 	private byte regF;
 	//	8-bit Interrupt Page address register I
+	// IFFs
 	private byte regI;
 	//	16-bit index registers  	IX,IY
 	private short regIX;
 	private short regIY;
 	//	PC                   16-bit Program Counter register
-	private short pc;
+	private short pc = 0;
 	//	8-bit Memory Refresh register 		R
 	private byte regR;
 	//	SP                   16-bit Stack Pointer register
@@ -64,15 +64,12 @@ public class Z80 {
 	public Z80() {
 	}
 
-	public Z80(byte regA, byte regB, byte regC, byte regD, byte regE, short regAF, short regBC, short regDE, short regHL, byte regF, byte regI, short regIX, short regIY, short pc, byte regR, short sp) {
+	public Z80(byte regA, byte regB, byte regC, byte regD, byte regE, short regHL, byte regF, byte regI, short regIX, short regIY, short pc, byte regR, short sp) {
 		this.regA = regA;
 		this.regB = regB;
 		this.regC = regC;
 		this.regD = regD;
 		this.regE = regE;
-		this.regAF = regAF;
-		this.regBC = regBC;
-		this.regDE = regDE;
 		this.regHL = regHL;
 		this.regF = regF;
 		this.regI = regI;
@@ -124,27 +121,36 @@ public class Z80 {
 	}
 
 	public short getRegAF() {
-		return regAF;
+		return Z80.bytesToShort(regA, regF);
 	}
 
 	public void setRegAF(short regAF) {
-		this.regAF = regAF;
+		byte lo = (byte) (regAF & 0xff);
+		byte hi = (byte) ((regAF >> 8) & 0xff);
+		regA = hi;
+		regF = lo;
 	}
 
 	public short getRegBC() {
-		return regBC;
+		return Z80.bytesToShort(regB, regC);
 	}
 
 	public void setRegBC(short regBC) {
-		this.regBC = regBC;
+		byte lo = (byte) (regBC & 0xff);
+		byte hi = (byte) ((regBC >> 8) & 0xff);
+		regB = hi;
+		regC = lo;
 	}
 
 	public short getRegDE() {
-		return regDE;
+		return Z80.bytesToShort(regD, regE);
 	}
 
 	public void setRegDE(short regDE) {
-		this.regDE = regDE;
+		byte lo = (byte) (regDE & 0xff);
+		byte hi = (byte) ((regDE >> 8) & 0xff);
+		regD = hi;
+		regE = lo;
 	}
 
 	public short getRegHL() {
@@ -230,7 +236,6 @@ public class Z80 {
 	public byte getSFlag() {
 		return (byte) (this.regF & Masks.MASK_FLAG_S);
 	}
-
 	// C carry Flag
 	// N ann/subtract
 	// P/V Parity/Overflow flag
@@ -263,8 +268,19 @@ public class Z80 {
 		return arr[off] << 8 & 0xFF00 | arr[off + 1] & 0xFF;
 	} // end of getInt
 
-	public static short toShort(byte hi, byte lo) {
+	public static short bytesToShort(byte hi, byte lo) {
 		short val = (short) (((hi & 0xFF) << 8) | (lo & 0xFF));
 		return val;
+	}
+
+	private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
+	public static String bytesToHex(byte[] bytes) {
+		char[] hexChars = new char[bytes.length * 2];
+		for ( int j = 0; j < bytes.length; j++ ) {
+			int v = bytes[j] & 0xFF;
+			hexChars[j * 2] = hexArray[v >>> 4];
+			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+		}
+		return new String(hexChars);
 	}
 }

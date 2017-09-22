@@ -12,6 +12,7 @@ import org.ultraviolet.spectrum.loaders.TapeLoader;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Created by developer on 21/09/2017.
@@ -38,11 +39,12 @@ public class Spectrum48k extends Machine {
 		}
 	}
 
-	public static final String FILE_48K_BIOS = "bios/48e.rom";
+	public static final String FILE_48K_BIOS = "/development/ideaProjects/Spectrum/ultravioletZx/src/test/resources/bios/48.rom";
 
 	public void loadBios() throws IOException, MemoryException {
 		byte[] content = FileUtils.readFileToByteArray(new File(FILE_48K_BIOS));
 		this.rom.loadMem(content);
+		logger.debug("Rom:" + Z80.bytesToHex(this.rom.getMem()));
 	}
 
 	@Override

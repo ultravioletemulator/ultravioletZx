@@ -1,13 +1,17 @@
 package org.ultraviolet.spectrum.z80;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.commons.validator.routines.RegexValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ultraviolet.spectrum.core.Masks;
+import org.ultraviolet.spectrum.fileReaders.OpReader;
 import org.ultraviolet.spectrum.machines.Machine;
 
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -22,42 +26,42 @@ public class OpCodesUtils {
 
 	static final Logger logger = LoggerFactory.getLogger(OpCodesUtils.class);
 
-	public void f00() {
+	public static void f00() {
 		//NOP
 	}
 
-	public void f01(Machine machine, int par1, int par2) {
+	public static void f01(Machine machine, int par1, int par2) {
 		//	LD BC,NN                ; 01 XX XX
 		machine.getZ80().setRegBC((short) par2);
 	}
 
-	public void f02(Machine machine, int par1, int par2) {
+	public static void f02(Machine machine, int par1, int par2) {
 		//	LD (BC),A               ; 02
 		byte content = machine.getZ80().getRegA();
 		machine.getRam().setByteToAddress(par1, content);
 	}
 
-	public void f03(Machine machine, int par1) {
+	public static void f03(Machine machine, int par1) {
 		//	INC BC                  ; 03
 		machine.getZ80().setRegBC((short) (machine.getZ80().getRegBC() + 1));
 	}
 
-	public void f04(Machine machine) {
+	public static void f04(Machine machine) {
 		//	INC B                   ; 04
 		machine.getZ80().setRegBC((short) (machine.getZ80().getRegB() + 1));
 	}
 
-	public void f05(Machine machine) {
+	public static void f05(Machine machine) {
 		//	DEC B                   ; 05
 		machine.getZ80().setRegBC((short) (machine.getZ80().getRegB() - 1));
 	}
 
-	public void f06(Machine machine, byte par1) {
+	public static void f06(Machine machine, byte par1) {
 		//	LD B,N                  ; 06 XX
 		machine.getZ80().setRegB(par1);
 	}
 
-	public void f07(Machine machine) {
+	public static void f07(Machine machine) {
 		//			RLCA                    ; 07
 		byte val = machine.getZ80().getRegA();
 		byte carry = (byte) (val & Masks.MASK_CARRY_BYTE);
@@ -66,12 +70,12 @@ public class OpCodesUtils {
 		Z80.setFlag(machine, carry);
 	}
 
-	public void f08(Machine machine, byte par1) {
+	public static void f08(Machine machine, byte par1) {
 		//	EX AF,AF'               ; 08
 		// TODO
 	}
 
-	public void f09(Machine machine) {
+	public static void f09(Machine machine) {
 		//	ADD HL,BC               ; 09
 		Z80 z80 = machine.getZ80();
 		short hl = (short) z80.getRegHL();
@@ -86,14 +90,14 @@ public class OpCodesUtils {
 		}
 	}
 
-	public void f0A(Machine machine) {
+	public static void f0A(Machine machine) {
 		//	LD A,(BC)               ; 0A
 		Z80 z80 = machine.getZ80();
 		byte val = machine.getRam().getByteFromAddress(z80.getRegBC());
 		z80.setRegA(val);
 	}
 
-	public void f0B(Machine machine) {
+	public static void f0B(Machine machine) {
 		//	DEC BC                  ; 0B
 		Z80 z80 = machine.getZ80();
 		int res = 0;
@@ -107,7 +111,7 @@ public class OpCodesUtils {
 		z80.setRegBC((short) res);
 	}
 
-	public void f0C(Machine machine) {
+	public static void f0C(Machine machine) {
 		//	INC C                   ; 0C
 		Z80 z80 = machine.getZ80();
 		byte res = 0;
@@ -121,7 +125,7 @@ public class OpCodesUtils {
 		z80.setRegC((byte) res);
 	}
 
-	public void f0D(Machine machine) {
+	public static void f0D(Machine machine) {
 		//	DEC C                   ; 0D
 		Z80 z80 = machine.getZ80();
 		byte res = 0;
@@ -135,13 +139,13 @@ public class OpCodesUtils {
 		z80.setRegC((byte) res);
 	}
 
-	public void f0A(Machine machine, byte p) {
+	public static void f0E(Machine machine, byte p) {
 		//	LD C,N                  ; 0E XX
 		Z80 z80 = machine.getZ80();
 		z80.setRegC(p);
 	}
 
-	public void f0F(Machine machine, byte p) {
+	public static void f0F(Machine machine, byte p) {
 		//			RRCA                    ; 0F
 		Z80 z80 = machine.getZ80();
 		byte c = z80.getRegA();
@@ -150,31 +154,31 @@ public class OpCodesUtils {
 		z80.setRegA(p);
 	}
 
-	public void f10(Machine machine, byte p) {
+	public static void f10(Machine machine, byte p) {
 		//	DJNZ $+2                ; 10
 		Z80 z80 = machine.getZ80();
 		// TODO
 	}
 
-	public void f11(Machine machine, byte p1, byte p2) {
+	public static void f11(Machine machine, byte p1, byte p2) {
 		//	LD DE,NN                ; 11 XX XX
 		Z80 z80 = machine.getZ80();
-		z80.setRegDE(Z80.toShort(p1, p2));
+		z80.setRegDE(Z80.bytesToShort(p1, p2));
 	}
 
-	public void f11(Machine machine, short p) {
+	public static void f11(Machine machine, short p) {
 		//	LD DE,NN                ; 11 XX XX
 		Z80 z80 = machine.getZ80();
 		z80.setRegDE(p);
 	}
 
-	public void f12(Machine machine) {
+	public static void f12(Machine machine) {
 		//	LD (DE),A               ; 12
 		Z80 z80 = machine.getZ80();
 		machine.getRam().setByteToAddress(z80.getRegDE(), z80.getRegA());
 	}
 
-	public void f13(Machine machine) {
+	public static void f13(Machine machine) {
 		//	INC DE                  ; 13
 		Z80 z80 = machine.getZ80();
 		try {
@@ -187,7 +191,7 @@ public class OpCodesUtils {
 		}
 	}
 
-	public void f14(Machine machine) {
+	public static void f14(Machine machine) {
 		//	INC D                   ; 14
 		Z80 z80 = machine.getZ80();
 		try {
@@ -200,7 +204,7 @@ public class OpCodesUtils {
 		}
 	}
 
-	public void f15(Machine machine) {
+	public static void f15(Machine machine) {
 		//	DEC D                   ; 15
 		Z80 z80 = machine.getZ80();
 		try {
@@ -213,13 +217,13 @@ public class OpCodesUtils {
 		}
 	}
 
-	public void f16(Machine machine, byte p) {
+	public static void f16(Machine machine, byte p) {
 		//	LD D,N                  ; 16 XX
 		Z80 z80 = machine.getZ80();
 		z80.setRegD(p);
 	}
 
-	public void f17(Machine machine, byte p) {
+	public static void f17(Machine machine, byte p) {
 		//			RLA                     ; 17
 		Z80 z80 = machine.getZ80();
 		byte carryFP = z80.getCFlag();
@@ -229,7 +233,6 @@ public class OpCodesUtils {
 		z80.setRegA(res);
 		Z80.setFlag(machine, carryP);
 	}
-
 	//	JR $+2                  ; 18
 	//	ADD HL,DE               ; 19
 	//	LD A,(DE)               ; 1A
@@ -381,7 +384,15 @@ public class OpCodesUtils {
 	//	XOR H                   ; AC
 	//	XOR L                   ; AD
 	//	XOR (HL)                ; AE
-	//	XOR A                   ; AF
+
+	public static void fAF(Machine machine) {
+		//	XOR A                   ; AF
+		Z80 z80 = machine.getZ80();
+		byte acc = z80.getRegA();
+		byte res = (byte) (acc ^ acc);
+		z80.setRegA(res);
+	}
+
 	//	OR B                    ; B0
 	//	OR C                    ; B1
 	//	OR D                    ; B2
@@ -818,7 +829,14 @@ public class OpCodesUtils {
 	//	RET P                   ; F0
 	//	POP AF                  ; F1
 	//	JP P,$+3                ; F2
-	//			DI                      ; F3
+	public static void fF3(Machine machine) {
+		//			DI                      ; F3
+		Z80 z80 = machine.getZ80();
+		byte ints = z80.getRegI();
+		byte res = (byte) (ints & Masks.MASK_BIT_1_N & Masks.MASK_BIT_2_N);
+		z80.setRegI(res);
+	}
+
 	//	CALL P,NN               ; F4 XX XX
 	//	PUSH AF                 ; F5
 	//	OR N                    ; F6 XX
@@ -917,24 +935,30 @@ public class OpCodesUtils {
 	private static RegexValidator rx3parHexValidator = new RegexValidator(RX_3_PAR_HEX);
 	private static RegexValidator rx3parValidator = new RegexValidator(RX_3_PAR);
 	//
-	private static Properties opMap = new Properties();
-	private static final String OP_MAP_FILE = "core/op.properties";
+	private static Map<String, String> opMap;
 
-	public static String loadOpFromMap(String op) {
-		Properties properties = new Properties();
-		final Iterator<Object> keyIterator = properties.keySet().iterator();
-		Set<String> keyset = new HashSet<>();
-		Set<String> keyset2 = keyset.stream().filter(line -> line != null && line.startsWith("" + op.substring(0, 1))).collect(Collectors.toSet());
+	static {
+		try {
+			opMap = OpReader.read();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static String loadOpFromMap(String op) throws IOException {
+		final Iterator<String> keyIterator = opMap.keySet().iterator();
+		Set<String> keyset = opMap.keySet();
+		Set<String> keyset2 = keyset.stream().filter(line -> line != null && line.startsWith("" + op.substring(0, 2))).collect(Collectors.toSet());
 		//Checkeamos el primer valor del stream de bytes
 		if (keyset2.size() == 1) {
 			return (String) keyset2.toArray()[0];
 		} else {
-			Set<String> keyset3 = keyset2.stream().filter(line -> line != null && line.startsWith("" + op.substring(0, 3))).collect(Collectors.toSet());
+			Set<String> keyset3 = keyset2.stream().filter(line -> line != null && line.startsWith("" + op.substring(0, 4))).collect(Collectors.toSet());
 			if (keyset3.size() == 1) {
 				return (String) keyset2.toArray()[0];
 			} else {
 				//DD CB XX 06
-				Set<String> keyset4 = keyset3.stream().filter(line -> line != null && line.startsWith("" + op.substring(0, 3))).collect(Collectors.toSet());
+				Set<String> keyset4 = keyset3.stream().filter(line -> line != null && line.startsWith("" + op.substring(0, 6))).collect(Collectors.toSet());
 				if (keyset3.size() == 1) {
 					return (String) keyset2.toArray()[0];
 				}
@@ -944,14 +968,10 @@ public class OpCodesUtils {
 		return "f00";
 	}
 
-	public static void loadOpMap() throws IOException {
-		opMap.load(new FileInputStream(OP_MAP_FILE));
-	}
-
 	static OpCodesUtils decoder = new OpCodesUtils();
 
 	public static void runOpCode(Machine machine, byte[] ops)
-			throws InvocationTargetException, IllegalAccessException {
+			throws InvocationTargetException, IllegalAccessException, IOException {
 		//min 4 bit op max 4+4+4
 		byte op0 = ops[0];
 		byte op1 = ops[1];
@@ -961,33 +981,26 @@ public class OpCodesUtils {
 		// Maskarak konprobatu.
 		// TODO
 		// TODO
-		String str = new String(new byte[] { op0 }, StandardCharsets.UTF_8);
+		String str = Z80.bytesToHex(new byte[] { op0 });
 		String decodedOp = loadOpFromMap(str);
-		if (rxNoparValidator.isValid(decodedOp)) {
-			Class decoderClass = OpCodesUtils.class;
-			Method method = MethodUtils.getMatchingAccessibleMethod(decoderClass, "f" + decodedOp, null);
-			method.invoke(decoder);
-		} else if (rx1parHexValidator.isValid(decodedOp)) {
-			Class decoderClass = OpCodesUtils.class;
+		logger.debug("decodedOp prop:" + str + " op:" + decodedOp);
+		String opFull = opMap.get(decodedOp);
+		int numPars = StringUtils.countMatches(opFull, "XX");
+		Class decoderClass = OpCodesUtils.class;
+		Method method = null;
+		switch (numPars) {
+		case 0:
+			method = MethodUtils.getMatchingMethod(decoderClass, "f" + decodedOp, Machine.class);
+			method.invoke(decoder, machine);
+			break;
+		case 1:
 			int par1 = op1 & Masks.MASK_PAR1;
 			String strPar1 = null;
-			Method method = MethodUtils.getMatchingAccessibleMethod(decoderClass, "f" + decodedOp, Integer.class);
-			method.invoke(decoder, par1);
-		} else if (rx1parValidator.isValid(decodedOp)) {
-			Class decoderClass = OpCodesUtils.class;
-			int par1 = op1 & Masks.MASK_PAR1;
-			String strPar1 = null;
-			Method method = MethodUtils.getMatchingAccessibleMethod(decoderClass, "f" + decodedOp, Integer.class);
-			method.invoke(decoder, par1);
-		} else if (rx2parHexValidator.isValid(decodedOp)) {
-			Class decoderClass = OpCodesUtils.class;
-			int par1 = op1 & Masks.MASK_PAR1;
-			int par2 = op2 & Masks.MASK_PAR2;
-			String strPar1 = null;
-			Method method = MethodUtils.getMatchingAccessibleMethod(decoderClass, "f" + decodedOp, Integer.class);
-			method.invoke(decoder, par1, par2);
-		} else if (rx2parValidator.isValid(decodedOp)) {
+			method = MethodUtils.getMatchingAccessibleMethod(decoderClass, "f" + decodedOp, Machine.class, Integer.class);
+			method.invoke(decoder, machine, par1);
+			break;
+		case 2:
+			break;
 		}
-		machine.getZ80().setPc((short) (machine.getZ80().getPc() + 1));
 	}
 }
