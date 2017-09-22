@@ -35,13 +35,16 @@ public abstract class Machine {
 			throws InterruptedException, InvocationTargetException, IllegalAccessException, IOException {
 		logger.debug("Runninng Machine Bios :" + this);
 		while (true) {
+			z80.printStatus();
 			byte content1 = rom.getByteFromAddress(z80.getPc());
 			byte content2 = rom.getByteFromAddress(z80.getPc() + 1);
 			byte content3 = rom.getByteFromAddress(z80.getPc() + 2);
-			byte[] contentArr = new byte[] { content1, content2, content3 };
+			byte content4 = rom.getByteFromAddress(z80.getPc() + 3);
+			byte content5 = rom.getByteFromAddress(z80.getPc() + 4);
+			byte[] contentArr = new byte[] { content1, content2, content3, content4, content5 };
 			logger.debug("OpCode: " + Z80.bytesToHex(contentArr));
-			OpCodesUtils.runOpCode(this, contentArr);
-			z80.setPc((short) (z80.getPc() + 1));
+			int numPars = OpCodesUtils.runOpCode(this, contentArr);
+			z80.setPc((short) (z80.getPc() + 1 + numPars));
 			Thread.sleep(200);
 		}
 	}

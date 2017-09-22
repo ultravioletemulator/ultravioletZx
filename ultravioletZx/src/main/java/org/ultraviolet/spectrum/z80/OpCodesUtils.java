@@ -1,3 +1,4 @@
+
 package org.ultraviolet.spectrum.z80;
 
 import org.apache.commons.lang3.StringUtils;
@@ -412,7 +413,14 @@ public class OpCodesUtils {
 	//	RET NZ                  ; C0
 	//	POP BC                  ; C1
 	//	JP NZ,$+3               ; C2
-	//	JP $+3                  ; C3
+	public static void fC3(Machine machine, byte par1, byte par2) {
+		//	JP $+3                  ; C3
+		//
+		Z80 z80 = machine.getZ80();
+		short pc = Z80.bytesToShort(par1, par2);
+		z80.setPc(pc);
+	}
+
 	//	CALL NZ,NN              ; C4 XX XX
 	//	PUSH BC                 ; C5
 	//	ADD A,N                 ; C6 XX
@@ -970,12 +978,44 @@ public class OpCodesUtils {
 
 	static OpCodesUtils decoder = new OpCodesUtils();
 
-	public static void runOpCode(Machine machine, byte[] ops)
+	public static String[] getParameters(int numPars, String opFull, byte[] ops) {
+		List<String> pars = new ArrayList<String>();
+		logger.debug("ops:" + Z80.bytesToHex(ops));
+		//		for (int i = 0; i < numPars; i++) {
+		if (opFull.length() == 4 || opFull.length() == 6) {
+			int firstInd = opFull.indexOf("XX");
+			int lastInd = opFull.lastIndexOf("XX");
+			if (firstInd > 0) {
+				int ind1 = ((firstInd / 2) + 1) / 2;
+				int ind2 = ((firstInd / 2 + 1) + 1) / 2;
+				logger.debug("ind1: " + ind1 + " ind2:" + ind2);
+				String par1 = Z80.byteToHex(ops[ind1]) + Z80.byteToHex(ops[ind2]);
+				logger.debug("par1:" + par1);
+				pars.add(par1);
+			}
+			if (lastInd > 0 && lastInd != firstInd) {
+				int ind1 = ((lastInd / 2) + 1) / 2;
+				int ind2 = (((lastInd / 2) + 2)) / 2;
+				//				logger.debug("Lind1: " + ind1 + " Lind2:" + ind2);
+				String par2 = Z80.byteToHex(ops[ind1]) + Z80.byteToHex(ops[ind2]);
+				//				logger.debug("par2:" + par2);
+				pars.add(par2);
+			}
+		}
+		//		}
+		String[] res = new String[pars.size()];
+		res = (String[]) pars.toArray(res);
+		return res;
+	}
+
+	public static int runOpCode(Machine machine, byte[] ops)
 			throws InvocationTargetException, IllegalAccessException, IOException {
 		//min 4 bit op max 4+4+4
 		byte op0 = ops[0];
 		byte op1 = ops[1];
 		byte op2 = ops[2];
+		byte op3 = ops[3];
+		byte op4 = ops[4];
 		// TODO
 		// TODO
 		// Maskarak konprobatu.
@@ -986,6 +1026,7 @@ public class OpCodesUtils {
 		logger.debug("decodedOp prop:" + str + " op:" + decodedOp);
 		String opFull = opMap.get(decodedOp);
 		int numPars = StringUtils.countMatches(opFull, "XX");
+		String[] params = getParameters(numPars, opFull, ops);
 		Class decoderClass = OpCodesUtils.class;
 		Method method = null;
 		switch (numPars) {
@@ -995,12 +1036,14 @@ public class OpCodesUtils {
 			break;
 		case 1:
 			int par1 = op1 & Masks.MASK_PAR1;
-			String strPar1 = null;
-			method = MethodUtils.getMatchingAccessibleMethod(decoderClass, "f" + decodedOp, Machine.class, Integer.class);
+			method = MethodUtils.getMatchingAccessibleMethod(decoderClass, "f" + decodedOp, Machine.class, Byte.class);
 			method.invoke(decoder, machine, par1);
 			break;
 		case 2:
+			method = MethodUtils.getMatchingAccessibleMethod(decoderClass, "f" + decodedOp, Machine.class, Byte.class, Byte.class);
+			method.invoke(decoder, machine, Z80.hexFromString(params[0])[0], Z80.hexFromString(params[1])[0]);
 			break;
 		}
+		return numPars;
 	}
 }

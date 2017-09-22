@@ -273,14 +273,47 @@ public class Z80 {
 		return val;
 	}
 
+	public static byte[] shortToBytes(short x) {
+		byte[] res = new byte[2];
+		res[0] = (byte) (x & 0xff);
+		res[1] = (byte) ((x >> 8) & 0xff);
+		return res;
+	}
+
 	private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
+
 	public static String bytesToHex(byte[] bytes) {
 		char[] hexChars = new char[bytes.length * 2];
-		for ( int j = 0; j < bytes.length; j++ ) {
+		for (int j = 0; j < bytes.length; j++) {
 			int v = bytes[j] & 0xFF;
 			hexChars[j * 2] = hexArray[v >>> 4];
 			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
 		}
 		return new String(hexChars);
+	}
+
+	public static String byteToHex(byte bytes) {
+		int v = bytes & 0xFF;
+		int ind = v >>> 4;
+		return "" + hexArray[ind];
+	}
+
+	public static final byte[] hexFromString(final String s) {
+		String[] v = s.split(" ");
+		byte[] arr = new byte[v.length];
+		int i = 0;
+		for (String val : v) {
+			arr[i++] = Integer.decode("0x" + val).byteValue();
+		}
+		return arr;
+	}
+
+	public void printStatus() {
+		logger.debug("Pc: " + bytesToHex(shortToBytes(pc)));
+		logger.debug("A: " + byteToHex(regA));
+		logger.debug("B: " + byteToHex(regB));
+		logger.debug("C: " + byteToHex(regC));
+		logger.debug("D: " + byteToHex(regD));
+		logger.debug("E: " + byteToHex(regE));
 	}
 }

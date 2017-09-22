@@ -193,7 +193,7 @@
         RET NZ                  ; C0
         POP BC                  ; C1
         JP NZ,$+3               ; C2
-        JP $+3                  ; C3 XX XX
+        JP $+3                  ; C3
         CALL NZ,NN              ; C4 XX XX
         PUSH BC                 ; C5
         ADD A,N                 ; C6 XX
