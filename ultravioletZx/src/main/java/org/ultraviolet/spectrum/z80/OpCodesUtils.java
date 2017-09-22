@@ -10,13 +10,9 @@ import org.ultraviolet.spectrum.core.Masks;
 import org.ultraviolet.spectrum.fileReaders.OpReader;
 import org.ultraviolet.spectrum.machines.Machine;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,7 +61,7 @@ public class OpCodesUtils {
 	public static void f07(Machine machine) {
 		//			RLCA                    ; 07
 		byte val = machine.getZ80().getRegA();
-		byte carry = (byte) (val & Masks.MASK_CARRY_BYTE);
+		byte carry = (byte) (val & Masks.MASK_CARRY_BYTE_MSB);
 		byte res = (byte) ((byte) (val << 1) & carry);
 		machine.getZ80().setRegA(res);
 		Z80.setFlag(machine, carry);
@@ -150,7 +146,7 @@ public class OpCodesUtils {
 		//			RRCA                    ; 0F
 		Z80 z80 = machine.getZ80();
 		byte c = z80.getRegA();
-		byte carry = (byte) (c & Masks.MASK_CARRY_BYTE);
+		byte carry = (byte) (c & Masks.MASK_CARRY_BYTE_LSB);
 		byte res = (byte) ((c >> 1) & carry);
 		z80.setRegA(p);
 	}
@@ -229,19 +225,80 @@ public class OpCodesUtils {
 		Z80 z80 = machine.getZ80();
 		byte carryFP = z80.getCFlag();
 		byte regA = z80.getRegA();
-		byte carryP = (byte) (regA & Masks.MASK_CARRY_BYTE);
+		byte carryP = (byte) (regA & Masks.MASK_CARRY_BYTE_MSB);
 		byte res = (byte) (((byte) (regA << 1)) & carryFP);
 		z80.setRegA(res);
 		Z80.setFlag(machine, carryP);
 	}
-	//	JR $+2                  ; 18
-	//	ADD HL,DE               ; 19
-	//	LD A,(DE)               ; 1A
-	//	DEC DE                  ; 1B
-	//	INC E                   ; 1C
-	//	DEC E                   ; 1D
-	//	LD E,N                  ; 1E XX
-	//			RRA                     ; 1F
+
+	public static void f18(Machine machine, byte p) {
+		//	JR $+2                  ; 18
+		//TODO
+	}
+
+	public static void f19(Machine machine, byte p) {
+		//	ADD HL,DE               ; 19
+		Z80 z80 = machine.getZ80();
+		z80.getRegDE();
+		z80.setRegHL((short) ((short) z80.getRegHL() + (short) z80.getRegDE()));
+	}
+
+	public static void f1A(Machine machine) {
+		//	LD A,(DE)               ; 1A
+		Z80 z80 = machine.getZ80();
+		z80.setRegA(machine.getRam().getByteFromAddress(z80.getRegDE()));
+	}
+
+	public static void f1B(Machine machine) {
+		//	DEC DE                  ; 1B
+		Z80 z80 = machine.getZ80();
+		try {
+			z80.setRegDE((short) (z80.getRegDE() - 1));
+		} catch (Exception e) {
+			e.printStackTrace();
+			z80.setPVFlag();
+		}
+	}
+
+	public static void f1C(Machine machine) {
+		//	INC E                   ; 1C
+		Z80 z80 = machine.getZ80();
+		try {
+			z80.setRegE((byte) (z80.getRegE() + 1));
+		} catch (Exception e) {
+			e.printStackTrace();
+			z80.setPVFlag();
+		}
+	}
+
+	public static void f1D(Machine machine) {
+		//	DEC E                   ; 1D
+		Z80 z80 = machine.getZ80();
+		try {
+			z80.setRegE((byte) (z80.getRegE() - 1));
+		} catch (Exception e) {
+			e.printStackTrace();
+			z80.setPVFlag();
+		}
+	}
+
+	public static void f1E(Machine machine, byte par1) {
+		//	LD E,N                  ; 1E XX
+		Z80 z80 = machine.getZ80();
+		z80.setRegE(par1);
+	}
+
+	public static void f1F(Machine machine) {
+		//			RRA                     ; 1F
+		Z80 z80 = machine.getZ80();
+		byte ac = z80.getRegA();
+		byte carryF = z80.getCFlag();
+		byte carry = (byte) (ac & Masks.MASK_CARRY_BYTE_LSB);
+		byte res = (byte) ((byte) (ac >> 1) & carryF);
+		z80.resetNFlag();
+		z80.resetHFlag();
+		z80.setRegF((byte) (z80.getRegF() & (byte) (Masks.MASK_CARRY_BYTE_LSB & carry)));
+	}
 	//	JR NZ,$+2               ; 20
 	//	LD HL,NN                ; 21 XX XX
 	//	LD (NN),HL              ; 22 XX XX

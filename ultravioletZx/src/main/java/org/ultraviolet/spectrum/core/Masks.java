@@ -11,7 +11,9 @@ public class Masks {
 	public final static byte MASK_PAR1 = (byte) 0x00FF0000;
 	public final static byte MASK_PAR2 = (byte) 0x0000FF00;
 	public final static byte MASK_PAR3 = (byte) 0x000000FF;
-	public final static byte MASK_CARRY_BYTE = (byte) 0x01;
+//	public final static byte MASK_CARRY_BYTE = (byte) 0x01;
+	public final static byte MASK_CARRY_BYTE_LSB = (byte) 0x01;
+	public final static byte MASK_CARRY_BYTE_MSB = (byte) 0x80;
 	//Flag Masks
 	//Bit 	7 6 5 4 3 2 	1 0
 	//Pos	S Z X H X P/V	N C

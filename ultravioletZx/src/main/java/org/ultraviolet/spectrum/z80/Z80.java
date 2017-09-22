@@ -229,12 +229,63 @@ public class Z80 {
 		return (byte) (this.regF & Masks.MASK_FLAG_PV);
 	}
 
-	public byte getZFlag() {
+	public byte gsetZFlag() {
 		return (byte) (this.regF & Masks.MASK_FLAG_Z);
+	}
+
+	public byte getHFlag() {
+		return (byte) (this.regF & Masks.MASK_FLAG_H);
 	}
 
 	public byte getSFlag() {
 		return (byte) (this.regF & Masks.MASK_FLAG_S);
+	}
+
+	public void setCFlag() {
+		this.regF = (byte) (this.regF & Masks.MASK_FLAG_C);
+	}
+
+	public void setNFlag() {
+		this.regF = (byte) (this.regF & Masks.MASK_FLAG_N);
+	}
+
+	public void setPVFlag() {
+		this.regF = (byte) (this.regF & Masks.MASK_FLAG_PV);
+	}
+
+	public void setZFlag() {
+		this.regF = (byte) (this.regF & Masks.MASK_FLAG_Z);
+	}
+
+	public void setSFlag() {
+		this.regF = (byte) (this.regF & Masks.MASK_FLAG_S);
+	}
+
+	public void setHFlag() {
+		this.regF = (byte) (Masks.MASK_FLAG_H);
+	}
+
+	public void resetCFlag() {
+		this.regF = (byte) (Masks.MASK_FLAG_C);
+	}
+
+	public void resetNFlag() {
+		this.regF = (byte) (Masks.MASK_FLAG_N);
+	}
+
+	public void resetPVFlag() {
+		this.regF = (byte) (Masks.MASK_FLAG_PV);
+	}
+
+	public void resetZFlag() {
+		this.regF = (byte) (this.regF & Masks.MASK_FLAG_Z);
+	}
+
+	public void resetSFlag() {
+		this.regF = (byte) (Masks.MASK_FLAG_S);
+	}
+	public void resetHFlag() {
+		this.regF = (byte) (Masks.MASK_FLAG_H);
 	}
 	// C carry Flag
 	// N ann/subtract
